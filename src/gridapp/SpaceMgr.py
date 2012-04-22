@@ -1,12 +1,15 @@
 # coding: utf-8
 #!/usr/bin/python
 
+import os
+import math
 import bisect
-
 
 import Proxy
 import Entity
 import Protocol
+
+from common import ResMgr
 
 class Chunk(object):
 
@@ -34,20 +37,49 @@ class NoneChunk(Chunk):
 
 class Space(object):
 
-    CHUNK_HEIGHT = 1024
-    CHUNK_WIDTH  = 1024
+    CHUNK_HEIGHT = 48
+    CHUNK_WIDTH  = 32
 
     SPACE_DIR = 'spaces/'
 
     def __init__(self, space_name):
+        self.space_path = os.path.join(Space.SPACE_DIR, space_name)
+        parser = ResMgr.XMLParser(self.space_path, 'settings.xml')
+        xml = parser.parse()
+        size = xml.firstChild
+        for child in size.childNodes:
+            if child.nodeType == child.TEXT_NODE:
+                if child.nodeName == 'width':
+                    self.width = int(child.data)
+                elif child.nodeName == 'height':
+                    self.height = int(child.data)
 
+        self.chunk_width = math.ceil(float(self.width) / Space.CHUNK_WIDTH)
+        self.chunk_height = math.ceil(float(self.width) / Space.CHUNK_HEIGHT)
 
-    def __init__(self, x, y):
         self.chunks={}
-        for i in xrange(x):
-            for j in xrange(y):
-                self.chunks[(x, y)] = Chunk(x, y)
+        for x in xrange(self.chunk_width):
+            for y in xrange(self.chunk_height):
+                self.chunks[(x, y)] == Chunk(x, y)
+
         self.entities = {}
+        parser = ResMgr.XMLParser(self.space_path, 'entities.xml')
+        xml = parser.parse()
+        root = xml.firstChild
+        for child in root.childNodes:
+            if child.nodeType == child.TEXT_NODE:
+                pass
+            else:
+                if child.nodeName == 'entity':
+                    for value in child.childNodes:
+                        if value.nodeType == child.TEXT_NODE:
+                            if value.nodeName == 'type':
+                                entity = {}
+                                entity['type'] = value.data
+                                entity['position'] = (i, j)
+                                entity['properties'] = {}
+                                self.addEntity(entity)
+
 
     def addEntity(self, entity):
         self.entities[entity.id] = entity
